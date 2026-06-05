@@ -1,0 +1,402 @@
+# Ansible Installation and Basic Configuration Guide
+
+## Architecture
+
+Create a minimum of 3 Linux servers:
+
+| Server   | Purpose                            |
+| -------- | ---------------------------------- |
+| Server-1 | Ansible Control Node (Main Server) |
+| Server-2 | Managed Node (Target Server)       |
+| Server-3 | Managed Node (Target Server)       |
+
+---
+
+# Step 1: Create Ansible User
+
+Run the following commands on all servers:
+
+```bash
+sudo useradd ansible
+sudo passwd ansible
+```
+
+Set a password for the `ansible` user.
+
+---
+
+# Step 2: Configure Sudo Privileges
+
+Edit the sudoers file:
+
+```bash
+sudo visudo
+```
+
+Add the following entry:
+
+```bash
+ansible ALL=(ALL) NOPASSWD:ALL
+```
+
+Save and exit.
+
+---
+
+# Step 3: Enable SSH Password Authentication
+
+Edit the SSH configuration file:
+
+```bash
+sudo vim /etc/ssh/sshd_config
+```
+
+Ensure the following settings exist:
+
+```bash
+PasswordAuthentication yes
+PubkeyAuthentication yes
+```
+
+If these lines are commented, remove the `#`.
+
+Restart the SSH service:
+
+### RHEL / CentOS / Rocky Linux
+
+```bash
+sudo systemctl restart sshd
+```
+
+### Ubuntu
+
+```bash
+sudo systemctl restart ssh
+```
+
+Verify:
+
+```bash
+sudo systemctl status sshd
+```
+
+---
+
+# Step 4: Switch to Ansible User
+
+```bash
+su - ansible
+```
+
+Verify the home directory:
+
+```bash
+pwd
+```
+
+Expected output:
+
+```bash
+/home/ansible
+```
+
+---
+
+# Step 5: Install Python and pip
+
+### RHEL / CentOS
+
+```bash
+sudo yum install python3 python3-pip -y
+```
+
+### Ubuntu
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip -y
+```
+
+Verify installation:
+
+```bash
+python3 --version
+pip3 --version
+```
+
+---
+
+# Step 6: Install Ansible
+
+Using pip:
+
+```bash
+pip3 install ansible
+```
+
+Or using package manager:
+
+### RHEL / CentOS
+
+```bash
+sudo yum install ansible -y
+```
+
+### Ubuntu
+
+```bash
+sudo apt install ansible -y
+```
+
+Verify installation:
+
+```bash
+ansible --version
+```
+
+---
+
+# Step 7: Generate SSH Key Pair
+
+On the Control Node:
+
+```bash
+ssh-keygen
+```
+
+Press Enter for default values.
+
+Keys will be created under:
+
+```bash
+~/.ssh/id_rsa
+~/.ssh/id_rsa.pub
+```
+
+---
+
+# Step 8: Copy SSH Key to Managed Nodes
+
+Copy the public key to each target node:
+
+```bash
+ssh-copy-id ansible@<Target-Node-IP>
+```
+
+Example:
+
+```bash
+ssh-copy-id ansible@192.168.1.101
+ssh-copy-id ansible@192.168.1.102
+```
+
+Test connectivity:
+
+```bash
+ssh ansible@192.168.1.101
+```
+
+Login should happen without a password.
+
+Exit:
+
+```bash
+exit
+```
+
+---
+
+# Step 9: Create Ansible Working Directory
+
+```bash
+mkdir ~/ansible
+cd ~/ansible
+```
+
+---
+
+# Step 10: Create Inventory File
+
+Create a hosts file:
+
+```bash
+vim hosts
+```
+
+Example:
+
+```ini
+[webservers]
+192.168.1.101
+192.168.1.102
+
+[webservers:vars]
+ansible_user=ansible
+```
+
+---
+
+# Step 11: Verify Inventory
+
+```bash
+ansible-inventory -i hosts --list
+```
+
+---
+
+# Step 12: Test Connectivity
+
+```bash
+ansible all -i hosts -m ping
+```
+
+Expected output:
+
+```bash
+SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+---
+
+# Important Ansible Commands
+
+## Ping All Hosts
+
+```bash
+ansible all -m ping
+```
+
+## Check Uptime
+
+```bash
+ansible all -a "uptime"
+```
+
+## Check Disk Usage
+
+```bash
+ansible all -a "df -h"
+```
+
+## Check Memory Usage
+
+```bash
+ansible all -a "free -m"
+```
+
+## Check Hostname
+
+```bash
+ansible all -a "hostname"
+```
+
+## Gather System Information
+
+```bash
+ansible all -m setup
+```
+
+## List Inventory Hosts
+
+```bash
+ansible all --list-hosts
+```
+
+## Copy File to Remote Hosts
+
+```bash
+ansible all -m copy -a "src=test.txt dest=/tmp/test.txt"
+```
+
+## Create Directory
+
+```bash
+ansible all -m file -a "path=/tmp/demo state=directory"
+```
+
+## Install Package
+
+```bash
+ansible all -m yum -a "name=httpd state=present"
+```
+
+## Start Service
+
+```bash
+ansible all -m service -a "name=httpd state=started"
+```
+
+## Restart Service
+
+```bash
+ansible all -m service -a "name=httpd state=restarted"
+```
+
+## Execute Shell Command
+
+```bash
+ansible all -m shell -a "date"
+```
+
+## Execute Command Module
+
+```bash
+ansible all -m command -a "hostname"
+```
+
+## Check Inventory
+
+```bash
+ansible-inventory --list
+```
+
+## Check Ansible Version
+
+```bash
+ansible --version
+```
+
+---
+
+# Useful Ansible Ad-hoc Modules
+
+| Module  | Purpose                             |
+| ------- | ----------------------------------- |
+| ping    | Connectivity Test                   |
+| command | Run Commands                        |
+| shell   | Run Shell Commands                  |
+| copy    | Copy Files                          |
+| file    | Create/Delete Files and Directories |
+| yum     | Install Packages (RHEL)             |
+| apt     | Install Packages (Ubuntu)           |
+| service | Manage Services                     |
+| user    | Manage Users                        |
+| setup   | Gather Facts                        |
+
+---
+
+# Best Practices
+
+* Use SSH key-based authentication instead of passwords.
+* Keep inventory files organized using groups.
+* Store playbooks in a separate directory.
+* Use roles for large projects.
+* Always test connectivity using `ansible all -m ping`.
+* Maintain version control (GitHub) for inventories and playbooks.
+
+## Directory Structure
+
+```text
+ansible/
+├── inventory
+├── playbooks/
+├── roles/
+├── files/
+├── templates/
+└── ansible.cfg
+```
+
+This structure is recommended for production environments.
