@@ -1,0 +1,498 @@
+# Ansible Playbook Creation and Execution Guide
+
+## What is a Playbook?
+
+An Ansible Playbook is a YAML file that contains a set of tasks to automate configuration management, application deployment, and server provisioning.
+
+Extension used:
+
+```bash
+.yml
+```
+
+Example:
+
+```bash
+first-playbook.yml
+```
+
+---
+
+# Prerequisites
+
+Before creating playbooks:
+
+* Ansible should be installed on the Control Node.
+* SSH key-based authentication should be configured.
+* Inventory file should be created.
+* Target nodes should be reachable using:
+
+```bash
+ansible all -m ping
+```
+
+Expected Output:
+
+```bash
+SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+---
+
+# Step 1: Create a Working Directory
+
+```bash
+mkdir -p ~/ansible/playbooks
+cd ~/ansible/playbooks
+```
+
+Verify:
+
+```bash
+pwd
+```
+
+---
+
+# Step 2: Create an Inventory File
+
+```bash
+mkdir -p ~/ansible/inventory
+cd ~/ansible/inventory
+vim hosts
+```
+
+Example:
+
+```ini
+[webservers]
+192.168.1.101
+192.168.1.102
+
+[webservers:vars]
+ansible_user=ansible
+```
+
+Verify inventory:
+
+```bash
+ansible-inventory -i hosts --list
+```
+
+---
+
+# Step 3: Create Your First Playbook
+
+```bash
+cd ~/ansible/playbooks
+vim first-playbook.yml
+```
+
+Example Playbook:
+
+```yaml
+---
+- name: Test Connectivity
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ping all servers
+      ping:
+```
+
+Save and exit.
+
+---
+
+# Step 4: Execute the Playbook
+
+```bash
+ansible-playbook -i ~/ansible/inventory/hosts first-playbook.yml
+```
+
+Expected Output:
+
+```bash
+PLAY [Test Connectivity]
+
+TASK [Ping all servers]
+ok: [192.168.1.101]
+ok: [192.168.1.102]
+
+PLAY RECAP
+192.168.1.101 : ok=1 changed=0 failed=0
+192.168.1.102 : ok=1 changed=0 failed=0
+```
+
+---
+
+# Playbook Structure
+
+```yaml
+---
+- name: Playbook Name
+  hosts: target_group
+  become: yes
+
+  tasks:
+    - name: Task Name
+      module:
+```
+
+### Components
+
+| Component | Description              |
+| --------- | ------------------------ |
+| name      | Description of play      |
+| hosts     | Target hosts/group       |
+| become    | Run with sudo privileges |
+| tasks     | List of tasks            |
+| module    | Action to perform        |
+
+---
+
+# Example 1: Install Apache HTTP Server
+
+## RHEL/CentOS
+
+```yaml
+---
+- name: Install Apache
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: Install httpd
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start httpd service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts apache-install.yml
+```
+
+---
+
+# Example 2: Install Nginx
+
+## Ubuntu
+
+```yaml
+---
+- name: Install Nginx
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Start nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts nginx-install.yml
+```
+
+---
+
+# Example 3: Create User
+
+```yaml
+---
+- name: Create User
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create devops user
+      user:
+        name: devops
+        state: present
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts create-user.yml
+```
+
+---
+
+# Example 4: Copy File to Remote Servers
+
+```yaml
+---
+- name: Copy File
+  hosts: all
+
+  tasks:
+    - name: Copy sample file
+      copy:
+        src: sample.txt
+        dest: /tmp/sample.txt
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts copy-file.yml
+```
+
+---
+
+# Example 5: Create Directory
+
+```yaml
+---
+- name: Create Directory
+  hosts: all
+
+  tasks:
+    - name: Create application directory
+      file:
+        path: /opt/application
+        state: directory
+        mode: '0755'
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts create-directory.yml
+```
+
+---
+
+# Example 6: Execute Shell Commands
+
+```yaml
+---
+- name: Execute Commands
+  hosts: all
+
+  tasks:
+    - name: Check uptime
+      shell: uptime
+      register: output
+
+    - name: Display result
+      debug:
+        var: output.stdout
+```
+
+Run:
+
+```bash
+ansible-playbook -i hosts execute-command.yml
+```
+
+---
+
+# Playbook Validation
+
+Check syntax before execution:
+
+```bash
+ansible-playbook --syntax-check playbook.yml
+```
+
+Example:
+
+```bash
+ansible-playbook --syntax-check apache-install.yml
+```
+
+---
+
+# Dry Run (Check Mode)
+
+Verify changes without applying them:
+
+```bash
+ansible-playbook -i hosts apache-install.yml --check
+```
+
+---
+
+# View Differences
+
+```bash
+ansible-playbook -i hosts apache-install.yml --check --diff
+```
+
+---
+
+# Run on Specific Host
+
+```bash
+ansible-playbook -i hosts apache-install.yml --limit 192.168.1.101
+```
+
+---
+
+# Run Specific Task Using Tags
+
+Playbook:
+
+```yaml
+---
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+      tags:
+        - install
+
+    - name: Start Service
+      service:
+        name: httpd
+        state: started
+      tags:
+        - start
+```
+
+Run only install task:
+
+```bash
+ansible-playbook apache.yml --tags install
+```
+
+Run only start task:
+
+```bash
+ansible-playbook apache.yml --tags start
+```
+
+---
+
+# Important Ansible Playbook Commands
+
+## Run Playbook
+
+```bash
+ansible-playbook playbook.yml
+```
+
+## Run with Inventory
+
+```bash
+ansible-playbook -i hosts playbook.yml
+```
+
+## Syntax Check
+
+```bash
+ansible-playbook --syntax-check playbook.yml
+```
+
+## Dry Run
+
+```bash
+ansible-playbook playbook.yml --check
+```
+
+## Show Differences
+
+```bash
+ansible-playbook playbook.yml --diff
+```
+
+## Run Specific Hosts
+
+```bash
+ansible-playbook playbook.yml --limit webservers
+```
+
+## Run Specific Tags
+
+```bash
+ansible-playbook playbook.yml --tags install
+```
+
+## Skip Tags
+
+```bash
+ansible-playbook playbook.yml --skip-tags install
+```
+
+## Verbose Output
+
+```bash
+ansible-playbook playbook.yml -v
+```
+
+More verbose:
+
+```bash
+ansible-playbook playbook.yml -vvv
+```
+
+---
+
+# Recommended Project Structure
+
+```text
+ansible/
+├── inventory/
+│   └── hosts
+├── playbooks/
+│   ├── apache-install.yml
+│   ├── nginx-install.yml
+│   └── create-user.yml
+├── files/
+├── templates/
+├── vars/
+├── roles/
+└── ansible.cfg
+```
+
+---
+
+# Best Practices
+
+* Use meaningful playbook names.
+* Always perform a syntax check before execution.
+* Use inventory groups instead of individual IPs.
+* Store sensitive information in Ansible Vault.
+* Use roles for reusable configurations.
+* Use tags to run specific tasks.
+* Keep playbooks modular and readable.
+* Maintain all playbooks in GitHub for version control.
+
+## Verification Commands
+
+```bash
+ansible --version
+ansible all -m ping
+ansible-inventory --list
+ansible-playbook --syntax-check playbook.yml
+```
+
+These commands help verify that your Ansible environment and playbooks are working correctly.
