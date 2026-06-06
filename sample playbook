@@ -1,0 +1,15 @@
+- hosts: dev
+  remote_user: ansible
+  become: yes
+  connection: ssh
+  tasks:
+    - name: CREATE A FILE
+      file:
+        path: /tmp/saturday.txt
+        state: touch
+
+    - name: CREATE A DIRECTORY
+      file:
+        path: /tmp/python
+        state: directory
+...
