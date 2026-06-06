@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  become: no
+  connection: local
+
+  tasks:
+
+    - name: create ec2 instance
+      amazon.aws.ec2_instance:
+        name: demo-server
+        region: ap-south-1
+        image_id: ami-xxxxxxxxxxxxxxxxx
+        instance_type: t2.micro
+        key_name: my-keypair
+        state: running
