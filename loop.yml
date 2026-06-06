@@ -1,0 +1,16 @@
+---
+- hosts: dev
+  name: ansible
+  become: yes
+  connection: ssh
+
+  tasks:
+    - name: install multiple packages
+      yum:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - maven
+        - git
+        - httpd
+...
