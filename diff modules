@@ -1,0 +1,13 @@
+---
+- hosts: dev
+  name: ansible
+  become: yes
+  connection: ssh
+  tasks:
+    - name: remove git
+      shell: yum remove git -y
+    - name: remove web server
+      shell: yum remove httpd -y
+    - name: remove maven
+      shell: yum remove maven -y
+...
